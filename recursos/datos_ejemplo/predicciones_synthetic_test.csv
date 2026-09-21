@@ -1,0 +1,6 @@
+id,AGB,LAI,FMC,NDVI,riesgo_incendio,fuente_version
+1,210,5.2,78,0.76,0.18,synthetic_test
+2,165,4.1,64,0.68,0.31,synthetic_test
+3,290,6.3,91,0.82,0.09,synthetic_test
+4,120,3.2,49,0.55,0.48,synthetic_test
+5,240,5.8,83,0.79,0.14,synthetic_test

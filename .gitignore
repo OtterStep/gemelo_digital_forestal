@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Entornos virtuales
+venv/
+venv312/
+.venv/
+
+# Secretos / configuración local
+.env
+.env.*
+!.env.example
+config.local.py
+.streamlit/secrets.toml
+
+# Modelos y artefactos de entrenamiento (regenerados por Colab o restaurados del zip)
+modelos_entrenados/*
+!modelos_entrenados/.gitkeep
+modelos_entrenados-*/
+*.zip
+
+# Node / React
+node_modules/
+laboratorio_react/dist/
+laboratorio_react/.vite/
+laboratorio_react/npm_dev.log
+laboratorio_react/.env
+laboratorio_react/.env.*
+!laboratorio_react/.env.example
+
+# Logs
+*.log
+
+# IDE / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

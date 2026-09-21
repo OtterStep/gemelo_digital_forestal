@@ -1,0 +1,12 @@
+site_name: Gemelo Digital Forestal
+site_description: Documentación del prototipo forestal
+nav:
+  - Inicio: index.md
+  - Instalación: instalacion.md
+  - Guía de usuario: guia_usuario.md
+  - Metodología: metodologia.md
+  - Modelos: modelos.md
+  - Métricas: metricas_evaluacion.md
+  - Interfaces: interfaz_streamlit.md
+  - Limitaciones: limitaciones.md
+  - ADR: adr/001-area-estudio.md

@@ -1,0 +1,2 @@
+import {describe,it,expect} from 'vitest'; import {demoSimulation} from './api';
+describe('simulador demo',()=>{it('genera resultado trazable y árboles',()=>{const r=demoSimulation({clareo_pct:10,quema_pct:5,restauracion_plantas_ha:80,manejo_combustibles:20,fmc:55,lai:4,ndvi:.72,precipitacion_mm:180,temperatura_c:27,year:2026,month:9});expect(r.source_version).toBe('synthetic_test');expect(r.trees.length).toBe(700);expect(r.temporal.length).toBe(12)})})

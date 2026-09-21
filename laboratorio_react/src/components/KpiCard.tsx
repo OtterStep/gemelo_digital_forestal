@@ -1,0 +1,1 @@
+export function KpiCard({label,value,delta,unit=''}:{label:string;value:number;delta?:number;unit?:string}){return <div className="kpi"><span>{label}</span><strong>{value.toFixed(2)}{unit}</strong>{delta!==undefined&&<small className={delta>=0?'up':'down'}>{delta>=0?'+':''}{delta.toFixed(2)} vs base</small>}</div>}

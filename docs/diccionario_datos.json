@@ -1,0 +1,1 @@
+{"source_version":"synthetic_test","variables":[{"name":"AGB","unit":"Mg/ha","min":20,"max":450},{"name":"LAI","unit":"m2/m2","min":0,"max":8},{"name":"FMC","unit":"%","min":30,"max":120},{"name":"NDVI","unit":"adimensional","min":-1,"max":1}]}

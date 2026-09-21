@@ -1,0 +1,1 @@
+{"nombre":"3-PG + LSTM","metricas":{"r2":0.92,"rmse":13.2,"mae":8.7,"roc_auc":0.95,"f1":0.91},"hiperparametros":{"units":32,"epochs":25,"learning_rate":0.001},"source_version":"synthetic_test","demo":true}

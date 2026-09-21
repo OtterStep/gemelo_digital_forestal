@@ -1,0 +1,4 @@
+# Los modelos entrenados (.joblib, .h5, .pkl), artefactos y
+# resultados_metricas.json se exportan desde entrenamiento_colab.ipynb (celda [10]).
+# Esta carpeta debe descargarse de Colab y colocarse aquí para que app.py funcione
+# en modo real (ver ADR-007). Si está vacía, app.py arranca en modo demo.
