@@ -23,6 +23,10 @@ modelos_entrenados/*
 modelos_entrenados-*/
 *.zip
 
+# Datos crudos/procesados descargados (no se versionan; se regeneran desde Drive/Colab)
+recursos/datos_crudos/
+recursos/datos_procesados/
+
 # Node / React
 node_modules/
 laboratorio_react/dist/

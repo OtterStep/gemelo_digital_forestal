@@ -45,25 +45,40 @@ def _artefactos():
             out["best"] = p.read_text(encoding="utf-8")
     except Exception:
         pass
-    for key, fn, job in (("agb", "AGB_GEDI.joblib", True), ("incendio", "INCENDIO.joblib", True),
-                         ("lstm", "3PG_LSTM.h5", False)):
-        try:
-            if job:
-                import joblib
-                out[key] = joblib.load(MODELOS_DIR / fn)
-            else:
-                from keras.models import load_model
-                out[key] = load_model(MODELOS_DIR / fn, compile=False)
-        except Exception:
-            out[key] = None
-    for key, fn in (("sc_agb", "AGB_GEDI_scaler.joblib"), ("sc_inc", "INCENDIO_scaler.joblib"),
-                    ("sc_lstm", "3PG_LSTM_scaler.joblib")):
+    for key, fn in (("agb", "AGB_GEDI.joblib"), ("incendio", "INCENDIO.joblib")):
         try:
             import joblib
             out[key] = joblib.load(MODELOS_DIR / fn)
         except Exception:
             out[key] = None
+    for key, fn in (("sc_agb", "AGB_GEDI_scaler.joblib"), ("sc_inc", "INCENDIO_scaler.joblib")):
+        try:
+            import joblib
+            out[key] = joblib.load(MODELOS_DIR / fn)
+        except Exception:
+            out[key] = None
+    # El LSTM (keras/tensorflow) se carga de forma perezosa: importar keras es
+    # lento (~25 s la primera vez) y solo hace falta cuando se pide NEE.
+    out["lstm"] = None
+    out["sc_lstm"] = None
     return out
+
+
+@lru_cache(maxsize=1)
+def _cargar_lstm():
+    """Carga perezosa del modelo 3-PG LSTM (keras) + scaler. Devuelve (modelo, scaler)."""
+    try:
+        from keras.models import load_model
+        import joblib
+        lstm = load_model(MODELOS_DIR / "3PG_LSTM.h5", compile=False)
+        sc_lstm = joblib.load(MODELOS_DIR / "3PG_LSTM_scaler.joblib")
+        return lstm, sc_lstm
+    except Exception:
+        return None, None
+
+
+def _lstm_ok():
+    return _cargar_lstm()[0] is not None
 
 
 def _par(s, k, d):
@@ -148,10 +163,11 @@ def _pred_riesgo(f, art):
 
 
 def _pred_nee(ventana, art):
-    if art["lstm"] is not None and art["sc_lstm"] is not None:
+    lstm, sc_lstm = _cargar_lstm()
+    if lstm is not None and sc_lstm is not None:
         try:
-            x = art["sc_lstm"].transform(ventana).astype(np.float32).reshape(1, 4, 6)
-            return float(np.asarray(art["lstm"].predict(x, verbose=0)).ravel()[0])
+            x = sc_lstm.transform(ventana).astype(np.float32).reshape(1, 4, 6)
+            return float(np.asarray(lstm.predict(x, verbose=0)).ravel()[0])
         except Exception:
             return None
     return None
@@ -239,7 +255,7 @@ def _insumos(scen, mes, cur, base, art, payload):
         {"objetivo": "Riesgo incendio", "modelo": "INCENDIO" if art["incendio"] else "sintético",
          "tipo": "Random Forest clasificación", "predictoras": _predictoras("inc", f["inc"]),
          "resultado": round(cur["riesgo"], 3), "unidad": "probabilidad"},
-        {"objetivo": "NEE", "modelo": "3PG_LSTM" if art["lstm"] else "no disponible",
+        {"objetivo": "NEE", "modelo": "3PG_LSTM" if _lstm_ok() else "no disponible",
          "tipo": "Híbrido fisiológico-LSTM", "predictoras": _predictoras("lstm", f["lstm"]),
          "resultado": round(cur["nee"], 3) if cur["nee"] is not None else None, "unidad": "flujo neto de C"},
     ]
@@ -386,7 +402,7 @@ def simular(payload: dict):
     return {"source_version": _fuente(),
             "modelos": {"biomasa": "AGB_GEDI" if art["agb"] else "sintético",
                         "riesgo": "INCENDIO" if art["incendio"] else "sintético",
-                        "nee": "3PG_LSTM" if art["lstm"] else "no disponible"},
+                        "nee": "3PG_LSTM" if _lstm_ok() else "no disponible"},
             "baseline": base, "scenario": cur,
             "delta": {"biomasa": cur["biomasa"] - base["biomasa"], "npp": cur["npp"] - base["npp"],
                       "riesgo": cur["riesgo"] - base["riesgo"], "nee": cur["nee"] - base["nee"]
