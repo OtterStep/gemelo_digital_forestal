@@ -23,6 +23,20 @@ app = FastAPI(title="Gemelo Digital Forestal API", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 MODELOS_DIR = Path(__file__).resolve().parent.parent / "modelos_entrenados"
+PARCELA_PATH = Path(__file__).resolve().parent.parent / "recursos" / "datos_reales" / "parcela_tapajos.json"
+
+
+@lru_cache(maxsize=1)
+def _datos_parcela():
+    """Carga los datos satelitales reales de Tapajós BR-Sa1 si están disponibles."""
+    try:
+        if PARCELA_PATH.exists():
+            import json
+            return json.loads(PARCELA_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return None
+
 
 # Valores base de referencia (medios de entrenamiento / clima neutro).
 S1_VV_BASE, S1_VH_BASE = -9.8, -16.5
@@ -68,6 +82,7 @@ def _artefactos():
 def _cargar_lstm():
     """Carga perezosa del modelo 3-PG LSTM (keras) + scaler. Devuelve (modelo, scaler)."""
     try:
+        # pyrefly: ignore [missing-import]
         from keras.models import load_model
         import joblib
         lstm = load_model(MODELOS_DIR / "3PG_LSTM.h5", compile=False)
@@ -213,16 +228,42 @@ def _resumen(g, art, mes):
 
 
 def _trees(risk, biomass):
+    parcela = _datos_parcela()
+    if parcela and "arboles" in parcela:
+        out = []
+        rng = random.Random(42)
+        for t in parcela["arboles"]:
+            h = float(t.get("height", 24.0))
+            elev = float(t.get("elevation", 92.0))
+            en_3d = bool(t.get("en_subparcela_3d", False))
+            rr = _clamp(risk + rng.uniform(-0.10, 0.10), 0.03, 0.98)
+            out.append({
+                "x": float(t["x"]),
+                "y": float(t["y"]),
+                "height": h,
+                "crown": float(t.get("crown", 1.2 + h * 0.09)),
+                "biomass": (biomass / 210.0) * (h / 18.0),
+                "risk": rr,
+                "loss": rng.random() * 0.10,
+                "elevation": elev,
+                "en_subparcela_3d": en_3d
+            })
+        return out
+
     rng = random.Random(42)
     out = []
     for i in range(700):
-        x = (i % 35) / 34 * 100 - 50
-        y = (i // 35) / 19 * 60 - 30
-        h = _clamp(7 + (math.sin(i * 12.3) * 0.5 + 0.5) * 22 + (x + y) * 0.02, 5, 32)
-        rr = _clamp(risk + (math.sin(i * 0.77) * 0.5) * 0.2, 0.03, 0.98)
+        col = i % 35
+        row = i // 35
+        x = col / 34 * 100 - 50
+        y = row / 19 * 60 - 30
+        onda = math.sin(x * 0.09) * math.cos(y * 0.12) * 0.5 + 0.5
+        jitter = rng.uniform(-0.15, 0.15)
+        h = _clamp(7 + (onda + jitter) * 22 + (x + y) * 0.02, 5, 32)
+        rr = _clamp(risk + rng.uniform(-0.15, 0.15), 0.03, 0.98)
         out.append({"x": x, "y": y, "height": h, "crown": 1.2 + h * 0.09,
                     "biomass": biomass / 210 * (h / 18), "risk": rr,
-                    "loss": rng.random() * 0.12})
+                    "loss": rng.random() * 0.12, "elevation": 92.0, "en_subparcela_3d": True})
     return out
 
 
@@ -399,6 +440,9 @@ def simular(payload: dict):
         bc = _resumen(neutro, art, i)
         temporal.append({"period": f"2026-{i:02d}", "baseline": bc["biomasa"], "scenario": sc["biomasa"],
                          "riesgo_base": bc["riesgo"], "riesgo_escenario": sc["riesgo"]})
+    parcela = _datos_parcela()
+    terreno = parcela.get("terreno") if parcela else None
+    meta_parc = parcela.get("metadata") if parcela else None
     return {"source_version": _fuente(),
             "modelos": {"biomasa": "AGB_GEDI" if art["agb"] else "sintético",
                         "riesgo": "INCENDIO" if art["incendio"] else "sintético",
@@ -408,7 +452,8 @@ def simular(payload: dict):
                       "riesgo": cur["riesgo"] - base["riesgo"], "nee": cur["nee"] - base["nee"]
                       if cur["nee"] is not None and base["nee"] is not None else None},
             "insumos": _insumos(scen, mes, cur, base, art, payload),
-            "temporal": temporal, "trees": _trees(cur["riesgo"], cur["biomasa"])}
+            "temporal": temporal, "trees": _trees(cur["riesgo"], cur["biomasa"]),
+            "terreno": terreno, "metadata_parcela": meta_parc}
 
 
 @app.post('/reporte')

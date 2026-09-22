@@ -2,6 +2,7 @@ import type {Scenario,Simulation} from '../types';
 import {ScenarioControls} from '../components/ScenarioControls';
 import {KpiCard} from '../components/KpiCard';
 import {ModelTrace} from '../components/ModelTrace';
+import { WithInfo } from '../components/Glossary';
 export type IAProps={configurado:boolean;explicacion:string;cargando:boolean;error:string;onExplicar:()=>void};
 export function ScenarioView({s,setS,result,run,loading,ia}:{s:Scenario;setS:(x:Scenario)=>void;result:Simulation|null;run:()=>void;loading:boolean;ia:IAProps}){
   const modelos=result?.insumos?.modelos?.map(m=>m.modelo).filter(Boolean).join(' · ');
@@ -14,10 +15,10 @@ export function ScenarioView({s,setS,result,run,loading,ia}:{s:Scenario;setS:(x:
     <section>
       <div className="kpis">
         {result&&<>
-          <KpiCard label="Biomasa" value={result.scenario.biomasa} delta={result.delta.biomasa} unit=" Mg/ha"/>
-          <KpiCard label="NPP" value={result.scenario.npp} delta={result.delta.npp} unit=" Mg C/ha/año"/>
-          <KpiCard label="Riesgo incendio" value={result.scenario.riesgo*100} delta={result.delta.riesgo*100} unit="%"/>
-          <KpiCard label="NEE (C neto)" value={result.scenario.nee??0} delta={result.delta.nee??0} unit=""/>
+          <WithInfo term="biomasa"><KpiCard label="Biomasa" value={result.scenario.biomasa} delta={result.delta.biomasa} unit=" Mg/ha"/></WithInfo>
+          <WithInfo term="npp"><KpiCard label="NPP" value={result.scenario.npp} delta={result.delta.npp} unit=" Mg C/ha/año"/></WithInfo>
+          <WithInfo term="riesgo"><KpiCard label="Riesgo incendio" value={result.scenario.riesgo*100} delta={result.delta.riesgo*100} unit="%"/></WithInfo>
+          <WithInfo term="nee"><KpiCard label="NEE (C neto)" value={result.scenario.nee??0} delta={result.delta.nee??0} unit=""/></WithInfo>
         </>}
       </div>
       <div className="panel hero">
